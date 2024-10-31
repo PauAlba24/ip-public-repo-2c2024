@@ -44,3 +44,7 @@ def deleteFavourite(request):
 @login_required
 def exit(request):
     pass
+def home(request):
+    images=[]
+    favourite_list=[]
+    return render(request,'home.html',{'images':images,'favourite_list':favourite_list})
