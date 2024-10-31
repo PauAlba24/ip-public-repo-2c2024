@@ -39,3 +39,7 @@ def getAllFavourites(request):
 def deleteFavourite(request):
     favId = request.POST.get('id')
     return repositories.deleteFavourite(favId) # borramos un favorito por su ID.
+def getAllImages(input=None):
+    json_collection=[]
+    images=[]
+    return images
