@@ -1,4 +1,5 @@
-{% extends 'header.html' %} 
+{% extends 'header.html' %}
+
 {% block content %}
 <main>
     <h1 class="text-center">Buscador Rick & Morty</h1>
@@ -18,7 +19,7 @@
                 </li>
                 <li class="page-item"><a class="page-link" href="#">3</a></li>
                 <li class="page-item">
-                    <a class="page-link" href="#">➡️</a>
+                    <a class="page-link">➡️</a>
                 </li>
             </ul>
         </nav>
@@ -36,17 +37,10 @@
     <div class="row row-cols-1 row-cols-md-3 g-4">
         {% if images|length == 0 %}
         <h2 class="text-center">La búsqueda no arrojó resultados...</h2>
-        {% else %} 
+        {% else %}
         {% for img in images %}
         <div class="col">
-            <div class="card mb-3 ms-5" style="max-width: 540px; border-color: 
-                {% if img.status == 'Alive' %}
-                    green
-                {% elif img.status == 'Dead' %}
-                    red
-                {% else %}
-                    orange
-                {% endif %};">
+            <div class="card mb-3 ms-5" style="max-width: 540px; border-color: {% if img.status == 'Alive' %} green {% elif img.status == 'Dead' %} red {% elif img.status == 'unknown' %} orange {% else %} grey {% endif %}; border-width: 2px; border-style: solid;">
                 <div class="row g-0">
                     <div class="col-md-4">
                         <img src="{{ img.url }}" class="card-img-top" alt="imagen">
@@ -57,13 +51,7 @@
                             <h3 class="card-title">{{ img.name }}</h3>
                             <p class="card-text">
                                 <strong>
-                                    {% if img.status == 'Alive' %} 
-                                        🟢 {{ img.status }} 
-                                    {% elif img.status == 'Dead' %} 
-                                        🔴 {{ img.status }} 
-                                    {% else %} 
-                                        🟠 {{ img.status }} 
-                                    {% endif %}
+                                    {{ img.status }} 
                                 </strong>
                             </p>
                             <p class="card-text"><small class="text-body-secondary">Última ubicación: {{ img.last_location }}</small></p>
@@ -94,4 +82,5 @@
         {% endif %}
     </div>
 </main>
+{% endblock %}
 {% endblock %}
