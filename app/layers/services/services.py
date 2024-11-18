@@ -3,13 +3,29 @@
 from ..persistence import repositories
 from ..utilities import translator
 from django.contrib.auth import get_user
+import requests
 
 def getAllImages(input=None):
-    # obtiene un listado de datos "crudos" desde la API, usando a transport.py.
-    json_collection = []
 
-    # recorre cada dato crudo de la colección anterior, lo convierte en una Card y lo agrega a images.
+    
+    url= 'https://rickandmortyapi.com/api/character/'
+
+    response = requests.get(url)
+
+    if response.status_code == 200:
+        data = response.json()
+      
+     # obtiene un listado de datos "crudos" desde la API, usando a transport.py.
+    json_collection = response.json().get('results',[])
     images = []
+    for character in json_collection:
+        images.append({
+            'name': character.get('name'),
+            'status': character.get('status'),
+            'url': character.get('image'),
+            'last_location': character.get('location', {}).get('name'),
+            'first_seen': character.get('episode', [])[0]  # Primer episodio
+        })
 
     return images
 
@@ -39,7 +55,3 @@ def getAllFavourites(request):
 def deleteFavourite(request):
     favId = request.POST.get('id')
     return repositories.deleteFavourite(favId) # borramos un favorito por su ID.
-def getAllImages(input=None):
-    json_collection=[]
-    images=[]
-    return images
