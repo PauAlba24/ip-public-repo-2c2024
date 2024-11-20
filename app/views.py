@@ -75,4 +75,4 @@ def deleteFavourite(request):
 @login_required
 def exit(request):
     logout(request)  # Desconectar al usuario
-    return redirect('index')  # Redirigir a la página principal
+    return redirect('home')  # Redirigir a la página principal
