@@ -7,8 +7,8 @@ from app.models import Favourite
 
 def getAllImages(input=None):
     # obtenemos los datos de la API
-    json_collection = transport.getAllImages(input) 
-
+    json_collection = transport.getAllImages(input)  # Traemos todas las imágenes
+    
     # Lista para almacenar las imágenes convertidas
     images = []
     index = 0
@@ -18,14 +18,17 @@ def getAllImages(input=None):
         images.append(translator.fromRequestIntoCard(json_collection[index]))  # Convertimos cada objeto a una Card
         index += 1
     
+    if input:  # Si se recibió un término de búsqueda, filtramos las imágenes
+        images = [img for img in images if input.lower() in img.name.lower()]
+    
     return images
 def addfavourite(user, image_id):
     # Obtener la imagen usando el ID
     images = getAllImages(image_id)
     if not images:
-        print(f"No se encontró la imagen con id: {image_id}")
+        print("No se encontró la imagen con id:", image_id)
         return None
-
+    
     image = images[0]  # Seleccionamos la primera imagen de la lista
 
     # Verificamos si el favorito ya existe

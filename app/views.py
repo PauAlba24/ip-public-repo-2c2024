@@ -27,17 +27,16 @@ def home(request):
 
 # Función que maneja la búsqueda de imágenes
 def search(request):
-    search_msg = request.POST.get('query', '')
+    search_msg = request.POST.get('query', '')  # Obtener el término de búsqueda
 
-    # Si el texto ingresado no está vacío trae las imágenes y favoritos que estan en services.py,
-    # para despues renderizar el template
-    if search_msg != '':
-        # Llamar a la función que obtiene las imágenes que coinciden con la búsqueda
-        images = services.search_images(search_msg)
+    if search_msg != '':  # Si el campo no está vacío
+        # Llamar a la función que obtiene las imágenes filtradas
+        images = services.getAllImages(search_msg)
         
         # Verificar si el usuario está autenticado para obtener sus favoritos
-        favourites = services.getuserfavourites(request)
-        # Preparar el contexto para pasar a la plantilla
+        favourites = services.getuserfavourites(request.user) if request.user.is_authenticated else []
+        
+        # Pasar las imágenes filtradas al contexto para renderizar en la plantilla
         context = {
             'images': images,
             'favourites': favourites,  
@@ -46,7 +45,7 @@ def search(request):
         return render(request, 'home.html', context)
     
     else:
-        # Redirigir a la página de inicio si el campo de búsqueda está vacío
+        # Si no se ingresó ningún término, redirigir a la página de inicio
         return redirect('home')
 
 # Estas funciones se usan cuando el usuario está logueado en la aplicación.
