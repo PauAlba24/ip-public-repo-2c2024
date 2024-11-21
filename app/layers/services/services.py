@@ -1,81 +1,43 @@
 
-
 from ..persistence import repositories
 from ..utilities import translator
 from django.contrib.auth import get_user
-from app.layers.utilities.translator import fromRequestIntoCard
-import requests
-from app.models import Favourite
+from ..transport import transport
 
-def getAllImages():
-    """
-    Esta función obtiene todas las imágenes de la API de Rick & Morty y las convierte
-    en instancias del modelo Favourite.
-    """
-    url = 'https://rickandmortyapi.com/api/character/'
-    response = requests.get(url)
-    
-    if response.status_code == 200:
-        results = response.json()['results']
-        favourites = []
-        for result in results:
-            favourite = Favourite(
-                url=result['image'],
-                name=result['name'],
-                status=result['status'],
-                last_location=result['location']['name'],
-                first_seen=result.get('first_episode', 'N/A'),  # Usamos .get() para evitar KeyError
-                user=None  # Si se desea asociar a un usuario, hacerlo aquí
-            )
-            favourites.append(favourite)
-        
-        return favourites
+def getAllImages(input=None):
+    # obtiene un listado de datos "crudos" desde la API, usando a transport.py.
+    json_collection = transport.getAllImages(input) # obtenemos los datos de la API
+
+    # recorre cada dato crudo de la colección anterior, lo convierte en una Card y lo agrega a images.
+    images = []
+
+    for object in json_collection: # recorremos los datos obtenidos y los sumamos a la lista images en formato de card usando a translator
+        images.append(translator.fromRequestIntoCard(object))
+    return images
+
+# añadir favoritos (usado desde el template 'home.html')
+def saveFavourite(request):
+    fav = translator.fromTemplateIntoCard(request) # transformamos un request del template en una Card.
+    fav.user = get_user(request) # le asignamos el usuario correspondiente.
+
+    return repositories.saveFavourite(fav) # lo guardamos en la base.
+
+# usados desde el template 'favourites.html'
+def getAllFavourites(request):
+    if not request.user.is_authenticated:
+        return []
     else:
-        return []  # Si la respuesta de la API no es exitosa, devolver lista vacía
+        user = get_user(request)
 
-def search_images(query):
-    """
-    Busca imágenes que coincidan con el término de búsqueda usando la API de Rick & Morty.
-    """
-    url = f'https://rickandmortyapi.com/api/character/?name={query}'
-    response = requests.get(url)
-    
-    if response.status_code == 200:
-        results = response.json()['results']
-        favourites = []
-        for result in results:
-            favourite = Favourite(
-                url=result['image'],
-                name=result['name'],
-                status=result['status'],
-                last_location=result['location']['name'],
-                first_seen=result.get('first_episode', 'N/A'),  # Usamos .get() para evitar KeyError
-                user=None  # Asociar usuario si es necesario
-            )
-            favourites.append(favourite)
-        
-        return favourites
-    else:
-        return []  # Si la respuesta de la API no es exitosa, devolver lista vacía
-#Agregamos las funciones para crear la seccion FAVORITOS
-def getuserfavourites(user):
-    """
-    Obtiene los favoritos de un usuario.
-    """
-    return Favourite.objects.filter(user=user)
+        favourite_list = repositories.getAllFavourites(user) # buscamos desde el repositories.py TODOS los favoritos del usuario (variable 'user').
+        mapped_favourites = []
 
-def addfavourite(user, image_id): 
-    """
-    Agrega una imagen a los favoritos del usuario.
-    """
-    Favourite.objects.create(user=user, id=image_id) #Guarda favorito en la base de datos
+        for favourite in favourite_list:
+            card = translator.fromRepositoryIntoCard(favourite) # transformamos cada favorito en una Card, y lo almacenamos en card.
+            mapped_favourites.append(card)
 
-def removefavourite(user, image_id):
-    """
-    Elimina una imagen de los favoritos del usuario.
-    """
-    Favourite.objects.filter(user=user, id=image_id).delete()
+        return mapped_favourites
 
-def isfavourite(user, image_id):# Verificamos si una imagen es favorita del usuario
-    
-    return Favourite.objects.filter(user=user, id=image_id).exists()
+def deleteFavourite(request):
+    favId = request.POST.get('id')
+    return repositories.deleteFavourite(favId) # borramos un favorito por su ID.
