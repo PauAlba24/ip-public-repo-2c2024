@@ -1,54 +1,83 @@
-
+# capa de vista/presentación
 from django.shortcuts import redirect, render
 from .layers.services import services
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth import logout, login, authenticate # importamos login y authenticate para poder loguear al usuario luego de autenticar sus datos
+from django.contrib.auth import logout
+from app.layers.services.services import addfavourite
+from app.layers.services.services import deleteFavourite as service_deleteFavourite
+
 
 
 def index_page(request):
     return render(request, 'index.html')
 
-# esta función obtiene 2 listados que corresponden a las imágenes de la API y los favoritos del usuario, y los usa para dibujar el correspondiente template.
-# si el opcional de favoritos no está desarrollado, devuelve un listado vacío.
+# Función que maneja la página principal con imágenes y favoritos del usuario
 def home(request):
-    images = services.getAllImages() # llamamos a la funcion obtener todas las imagenes
-    favourite_list = services.getAllFavourites(request) # Llamamos a la funcion de obtener todos los favoritos
+    # Obtener las imágenes desde la API
+    images = services.getAllImages()  # Llama a la función para obtener todas las imágenes
 
-    return render(request, 'home.html', { 'images': images, 'favourite_list': favourite_list })
+    favourites = services.getuserfavourites(request.user) if request.user.is_authenticated else []
+#Preparamos el contexto para la plantilla con las imagenes y los favoritos 
+    context = { 
+        'images': images,
+        'favourites': favourites,
+    }
+    
+    return render(request, 'home.html', context)
 
+# Función que maneja la búsqueda de imágenes
 def search(request):
-    search_msg = request.POST.get('query', '')
+    search_msg = request.POST.get('query', '')  # Obtener el término de búsqueda
 
-    # si el texto ingresado no es vacío, trae las imágenes y favoritos desde services.py,
-    # y luego renderiza el template (similar a home).
-    if (search_msg != ''):
-        images = services.getAllImages(search_msg) # llamamos a la funcion de obtener todas las imagenes usando el input del cuadro de busqueda
-        # llamamos a la lista de favoritos para que se muestren correctamente cuando utilizamos la barra de busqueda
-        favourite_list = services.getAllFavourites(request)
-        return render(request, 'home.html', {'images': images, 'favourite_list': favourite_list})
+    if search_msg != '':  # Si el campo no está vacío
+        # Llamar a la función que obtiene las imágenes filtradas
+        images = services.getAllImages(search_msg)
+        
+        # Verificar si el usuario está autenticado para obtener sus favoritos
+        favourites = services.getuserfavourites(request.user) if request.user.is_authenticated else []
+        
+        # Pasar las imágenes filtradas al contexto para renderizar en la plantilla
+        context = {
+            'images': images,
+            'favourites': favourites,  
+            'search_msg': search_msg  # Mostrar el término de búsqueda al usuario
+        }
+        return render(request, 'home.html', context)
+    
     else:
+        # Si no se ingresó ningún término, redirigir a la página de inicio
         return redirect('home')
-
 
 # Estas funciones se usan cuando el usuario está logueado en la aplicación.
 @login_required
-def getAllFavouritesByUser(request): # llamamos a la funcion de obtener todos los favoritos de un usuario para mostrarlos en otra plantilla
-    favourite_list = services.getAllFavourites(request)
-    return render(request, 'favourites.html', { 'favourite_list': favourite_list })
-
-@login_required 
-def saveFavourite(request): # llamamos a la funcion agregar favoritos desde servicios
-    services.saveFavourite(request)
-    return redirect('home') # redireccionamos a la pagina 'home' para seguir viendo las imagenes
+def getAllFavouritesByUser(request): #Completamos la funcion que ya venia
+    # Obtener los favoritos del usuario
+    favourite_list = services.getuserfavourites(request.user)
+    return render(request, 'favourites.html', {'favourite_list': favourite_list})
 
 @login_required
-def deleteFavourite(request): # llamamos a la funcion eliminar favoritos
-    services.deleteFavourite(request) 
-    return redirect('favoritos') # redireccionamos a la pagina de favoritos para seguir viendo el listado de favs
+def saveFavourite(request):
+    if request.method == "POST":
+        image_id = request.POST.get('image_id')
+        
+        # Verificar que el 'image_id' sea válido
+        if image_id:
+            favourite = services.addfavourite(request.user, image_id)
+            if favourite:
+                return redirect('home')  # Redirigir a la página de inicio
+            else:
+                # Puedes agregar un mensaje de error si no se pudo agregar el favorito
+                print("Error: El favorito no se agregó correctamente.")
+        
+    return redirect('home')  # Si no es un POST, redirigimos a la página de inicio
 
 @login_required
-def exit(request): # llamamos a la funcion logout para desloguear
-    logout(request)
-    return redirect('login') # redireccionamos a la pagina de 'login' una vez deslogueado
-
-
+def deleteFavourite(request):
+    if request.method == "POST":
+        image_id = request.POST.get('image_id')  # Asegúrate de que 'image_id' esté bien definido en el formulario
+        services.deleteFavourite(request.user, image_id)  # Llama correctamente al servicio
+        return redirect('favoritos')  # Redirige a la página de favoritos después de eliminar
+@login_required
+def exit(request):
+    logout(request)  # Desconectar al usuario
+    return redirect('login')  # Redirigir a la página principal
